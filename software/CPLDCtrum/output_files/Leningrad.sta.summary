@@ -1,0 +1,113 @@
+------------------------------------------------------------
+TimeQuest Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Setup 'ps2:mkb|TRIG_ARR'
+Slack : -8.378
+TNS   : -363.148
+
+Type  : Setup 'clk'
+Slack : -7.687
+TNS   : -654.929
+
+Type  : Setup 'div[1]'
+Slack : -6.716
+TNS   : -145.630
+
+Type  : Setup 'div[0]'
+Slack : -5.922
+TNS   : -147.533
+
+Type  : Setup 'vsync'
+Slack : -4.174
+TNS   : -23.488
+
+Type  : Setup 'MREQ'
+Slack : -2.415
+TNS   : -3.642
+
+Type  : Setup 'A[0]'
+Slack : -1.193
+TNS   : -1.193
+
+Type  : Hold 'clk'
+Slack : -2.501
+TNS   : -9.872
+
+Type  : Hold 'MREQ'
+Slack : -1.543
+TNS   : -25.116
+
+Type  : Hold 'div[1]'
+Slack : -0.031
+TNS   : -0.062
+
+Type  : Hold 'div[0]'
+Slack : 0.844
+TNS   : 0.000
+
+Type  : Hold 'A[0]'
+Slack : 1.639
+TNS   : 0.000
+
+Type  : Hold 'ps2:mkb|TRIG_ARR'
+Slack : 1.667
+TNS   : 0.000
+
+Type  : Hold 'vsync'
+Slack : 1.676
+TNS   : 0.000
+
+Type  : Recovery 'div[0]'
+Slack : -1.749
+TNS   : -2.841
+
+Type  : Recovery 'div[1]'
+Slack : -1.405
+TNS   : -1.890
+
+Type  : Recovery 'MREQ'
+Slack : 0.309
+TNS   : 0.000
+
+Type  : Removal 'MREQ'
+Slack : -0.390
+TNS   : -0.390
+
+Type  : Removal 'div[1]'
+Slack : 0.931
+TNS   : 0.000
+
+Type  : Removal 'div[0]'
+Slack : 1.538
+TNS   : 0.000
+
+Type  : Minimum Pulse Width 'A[0]'
+Slack : -2.289
+TNS   : -2.289
+
+Type  : Minimum Pulse Width 'MREQ'
+Slack : -2.289
+TNS   : -2.289
+
+Type  : Minimum Pulse Width 'clk'
+Slack : -2.289
+TNS   : -2.289
+
+Type  : Minimum Pulse Width 'div[0]'
+Slack : 0.234
+TNS   : 0.000
+
+Type  : Minimum Pulse Width 'div[1]'
+Slack : 0.234
+TNS   : 0.000
+
+Type  : Minimum Pulse Width 'ps2:mkb|TRIG_ARR'
+Slack : 0.234
+TNS   : 0.000
+
+Type  : Minimum Pulse Width 'vsync'
+Slack : 0.234
+TNS   : 0.000
+
+------------------------------------------------------------

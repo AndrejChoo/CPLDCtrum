@@ -1,0 +1,23 @@
+
+State Machine - |Leningrad|rstate
+Name rstate.1111 rstate.1110 rstate.1101 rstate.1100 rstate.1011 rstate.1010 rstate.1001 rstate.1000 rstate.0111 rstate.0110 rstate.0011 rstate.0010 rstate.0001 rstate.0000 
+rstate.0000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+rstate.0001 0 0 0 0 0 0 0 0 0 0 0 0 1 1 
+rstate.0010 0 0 0 0 0 0 0 0 0 0 0 1 0 1 
+rstate.0011 0 0 0 0 0 0 0 0 0 0 1 0 0 1 
+rstate.0110 0 0 0 0 0 0 0 0 0 1 0 0 0 1 
+rstate.0111 0 0 0 0 0 0 0 0 1 0 0 0 0 1 
+rstate.1000 0 0 0 0 0 0 0 1 0 0 0 0 0 1 
+rstate.1001 0 0 0 0 0 0 1 0 0 0 0 0 0 1 
+rstate.1010 0 0 0 0 0 1 0 0 0 0 0 0 0 1 
+rstate.1011 0 0 0 0 1 0 0 0 0 0 0 0 0 1 
+rstate.1100 0 0 0 1 0 0 0 0 0 0 0 0 0 1 
+rstate.1101 0 0 1 0 0 0 0 0 0 0 0 0 0 1 
+rstate.1110 0 1 0 0 0 0 0 0 0 0 0 0 0 1 
+rstate.1111 1 0 0 0 0 0 0 0 0 0 0 0 0 1 
+
+State Machine - |Leningrad|divmmc_v:mdv|transState
+Name transState.00 transState.TRANSMIT transState.SAMPLE 
+transState.00 0 0 0 
+transState.SAMPLE 1 0 1 
+transState.TRANSMIT 1 1 0 

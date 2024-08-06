@@ -1,0 +1,5 @@
+Info (10281): Verilog HDL Declaration information at Leningrad.v(13): object "nINT" differs only in case from object "nint" in the same scope
+Info (10281): Verilog HDL Declaration information at Leningrad.v(46): object "RAMCE" differs only in case from object "ramce" in the same scope
+Info (10281): Verilog HDL Declaration information at Leningrad.v(44): object "RAMOE" differs only in case from object "ramoe" in the same scope
+Info (10281): Verilog HDL Declaration information at Leningrad.v(466): object "RAM_BANK" differs only in case from object "ram_bank" in the same scope
+Warning (10268): Verilog HDL information at ps2.v(127): always construct contains both blocking and non-blocking assignments
