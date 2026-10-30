@@ -1,3 +1,6 @@
+
+//`define USBKB
+
 module Leningrad(
 	input wire clk, //28 MHz
 	input wire rst,
@@ -28,13 +31,21 @@ module Leningrad(
 	output wire B,
 	output wire BRIGHT,
 	output wire SYNC,
+	output wire VCLOCK,
 	//AY-3-8910 wires
 	output wire AY_CLK,
 	output wire AY_BDIR,
 	output wire AY_BC1,
+`ifdef USBKB
+	input wire KB_LATCH,
+	input wire KB_CS,
+	input wire KB_MOSI,
+	input wire KB_SCK,
+`else
 	//PS_2 Keyboard
 	input wire PS2_CLOCK,
 	input wire PS2_DAT,
+`endif
 	//Periferia
 	output wire BEEP,
 	input wire TAPEIN,
@@ -55,7 +66,6 @@ module Leningrad(
 	input wire EPROM
 );
 
-
 wire CLK_28,CLK_14,CLK_7,CLK_3_5;
 
 
@@ -71,12 +81,11 @@ assign CLK_14 = div[0];
 assign CLK_7 = div[1];
 assign CLK_3_5 = div[2];
 assign Z80_CLK = CLK_3_5;
+assign VCLOCK = CLK_7;
 
-
-//Videokontroller
+//Счётчики пикселей и строк
 reg[8:0]hcnt;
 reg[8:0]vcnt;
-
 
 always@(posedge CLK_7 or negedge rst)
 begin
@@ -97,24 +106,23 @@ begin
 		end
 end
 
-
 wire hsync,vsync,blank,border,pixen,nint,vread;
 
 assign hsync = (hcnt >= 14 && hcnt < 42); //14-WAIT_28-HSYNC_54-BLANK_48-LBORDER_256-SCREEN_48-RBORDER
 assign vsync = (vcnt >= 248 && vcnt < 256); //192-SCREEN_56-BBORDER_8-VSYNC_56-TBORDER
 assign blank = (hcnt < 96 || (vcnt > 247 && vcnt < 256)); //Signal gasheniya 0-SCREEN, 1-BLANK
 assign border = ((hcnt >= 96 && hcnt < 144) || (hcnt >= 399 && hcnt < 448) || (vcnt >= 192 && vcnt <= 312)); //0-SCREEN, 1-BORDER;
-assign nint = (vcnt == 248 && hcnt < 70); //INT
-assign vread = (hcnt > 135 && hcnt < 391 && vcnt < 192);
+assign nint = (vcnt == 249 && hcnt < 70); //INT
+assign vread = (vcnt < 192);
 
 assign SYNC = ~(hsync ^ vsync);
 assign nINT = ~nint;
 assign WAIT = 1;
 
-//VIDeokontroller
+//Videocontroller
 wire[15:0]PIXA,ATTRA;
 wire[17:0]VA;
-wire[8:0]PIXCNT = hcnt - 136;
+	wire[8:0]PIXCNT = hcnt - 136; //Цепь, равная hcnt-8, по ней читаются видеоданные
 
 assign PIXA[15:0] = {VRAM_BANK,2'b10,vcnt[7:6],vcnt[2:0],vcnt[5:3],PIXCNT[7:3]};
 assign ATTRA[15:0] = {VRAM_BANK,5'b10110,vcnt[7:3],PIXCNT[7:3]};
@@ -122,7 +130,6 @@ assign ATTRA[15:0] = {VRAM_BANK,5'b10110,vcnt[7:3],PIXCNT[7:3]};
 reg[7:0]attr,tattr,pix,tpix;
 
 reg[3:0]rstate;
-reg rreq,wreq,vreq,vreq1,rrdy,wrdy,vrdy,vrdy1;
 reg ramoe,ramwe;
 reg[18:0]ramadd,wradd;
 reg[7:0]cpudin,cpudout;
@@ -130,6 +137,7 @@ reg[2:0]rdel;
 
 localparam srdel = 2; //Задержка чтения/записи SRAM
 
+//Буфферизация адреса и данных на запись в ОЗУ
 always@(negedge WR)
 	begin
 		if(MREQ == 0 && (A[15]|A[14]) == 1)
@@ -138,7 +146,8 @@ always@(negedge WR)
 				wradd <= {2'b00,RAM_BANK[2:0],A[13:0]};
 			end
 	end
-	
+
+//Менеджер работы с ОЗУ
 always@(posedge CLK_28 or negedge rst)
 begin
 	if(!rst)
@@ -158,9 +167,9 @@ begin
 					begin
 						ramoe <= 0;
 						ramwe <= 0;
-						if(PIXCNT[2:0] == 3) rstate <= 1;
-						else if(MREQ == 0 && RD == 0 && (A[15]|A[14]) == 1) rstate <= 6; // 
-						else if(MREQ == 0 && WR == 0 && (A[15]|A[14]) == 1) rstate <= 9;
+						if(PIXCNT[2:0] == 3 && vread == 1) rstate <= 1;                  //Чтение видеоданных
+						else if(MREQ == 0 && RD == 0 && (A[15]|A[14]) == 1) rstate <= 6; //Запрос на чтение от CPU
+						else if(MREQ == 0 && WR == 0 && (A[15]|A[14]) == 1) rstate <= 9; //Запрос на запись от CPU
 						else rstate <= 0;
 					end
 				1: //READ VIDEODATA PIX
@@ -302,7 +311,32 @@ assign BRIGHT = (border)? 0 : attr[6];
 wire[4:0]KD,KJ;
 wire KRST;
 
-ps2 mkb(.clk(CLK_28),.rst(rst),.A(A[15:8]),.rst_out(KRST),.KD(KD),.KJ(KJ),.clock(PS2_CLOCK),.dat(PS2_DAT));
+`ifdef USBKB
+keyboard_usb  mkbu(
+	.rst(rst),
+	.MOSI(KB_MOSI),
+	.SCK(KB_SCK),
+	.CS(KB_CS),
+	.LATCH(KB_LATCH),
+	.A(A[15:8]),
+	.PC(KJ),
+	.PB(KD),
+	.RESET(KRST),
+	.NMI(),
+	.LED()
+);
+`else
+ps2 mkb(
+	.clk(CLK_28),
+	.rst(rst),
+	.A(A[15:8]),
+	.rst_out(KRST),
+	.KD(KD),
+	.KJ(KJ),
+	.clock(PS2_CLOCK),
+	.dat(PS2_DAT)
+);
+`endif
 
 assign Z80_RST = KRST & rst;
 
@@ -316,7 +350,7 @@ assign IOWR = WR | IORQ;
 
 reg[7:0]FE_W,P7FFD;
 
-always@(negedge IOWR or negedge rst)
+always@(posedge clk or negedge rst)
 begin
 	if(!rst)
 		begin
@@ -325,12 +359,12 @@ begin
 		end
 	else
 		begin
-			if(A[7:0] == 8'hFE) FE_W <= D;
-			if(A[7:0] == 8'hFD && A[15:8] == 8'h7F) P7FFD <= D;
+			if(A[7:0] == 8'hFE && IOWR == 0) FE_W <= D;
+			if(A[7:0] == 8'hFD && A[15:8] == 8'h7F  && IOWR == 0) P7FFD <= D;
 		end
 end
 
-assign BEEP = FE_W[4];
+assign BEEP = ~FE_W[4];
 
 always@(negedge IORD or negedge rst)
 begin
@@ -342,7 +376,8 @@ begin
 			case(A[7:0])
 				8'hFE: ior <= {1'b1,TAPEIN,1'b1,KD};
 				8'h1F: ior <= {3'b111,KJ};
-				8'hFF: ior <= (border)? attr : {5'b11111,Gb,Rb,Bb};
+				//8'hFF: ior <= (border)? attr : {5'b11111,Gb,Rb,Bb};
+				8'hFF: ior <=  attr;
 				default: ior <= 8'hFF;
 			endcase
 				end
@@ -364,17 +399,17 @@ wire[2:0] RAM_BANK;
 reg[2:0]ram_bank;
 
 
-always@(*)
+always@(posedge clk or negedge rst)
 	begin
 		if(!rst) ram_bank <= 3'b000;
 		else
 			begin
-		case(A[15:14]) 
-			2'b00: ram_bank <= 3'b000;
-			2'b01: ram_bank <= 3'b101;
-			2'b10: ram_bank <= 3'b010;
-			2'b11: ram_bank <= P7FFD[2:0];
-		endcase
+				case(A[15:14]) 
+					2'b00: ram_bank <= 3'b000;
+					2'b01: ram_bank <= 3'b101;
+					2'b10: ram_bank <= 3'b010;
+					2'b11: ram_bank <= P7FFD[2:0];
+				endcase
 			end
 	end
 
@@ -399,44 +434,38 @@ assign CPUDO = (RAMOUT == 0 || DIOOUT == 0)? 8'hFF : D;
 //ROM
 wire DIVROM;
 
-//`define EXTDIVROM
-
-`ifdef  EXTDIVROM
-wire DIVROMOE;
-assign ROM_CE = (DIVROM)? DIVROMOE : (MREQ | RD | A[14] | A[15]);
-assign ROM_BANK[0] = (~DIVROMOE & DIVROM)? 0 : (P7FFD[5] == 1)? 1'b1 : P7FFD[4];
-assign ROM_BANK[1] = (~DIVROMOE & DIVROM)? 1 : 0;
-assign ROMOE = 1;	
-`else
 assign ROM_CE = (MREQ | RD | A[14] | A[15] | DIVROM);
 assign ROM_BANK[0] = (P7FFD[5] == 1)? 1'b1 : P7FFD[4];
 assign ROM_BANK[1] = 0;
-`endif
 
 
-
-divmmc_v mdv(.clock(CLK_14),.reset(rst),.A(A),.iorq(IORQ),.mreq(MREQ),.rd(RD),.wr(WR),.m1(M1),
-				.romcs(DIVROM),
-`ifdef  EXTDIVROM
-				.romoe(DIVROMOE),
-`else
-				.romoe(ROMOE),
-`endif
-				//.romwr(ROMWR),
-				.ramoe(RAMOE),
-				.ramwr(RAMWR),
-				.bankout(BANKOUT),
-				.D(DIVDAT),
-				.card(CARD),.spi_clock(SCK),.spi_dataout(MOSI),.spi_datain(MISO),.poweron(POWERON),
-				.mapcondout(MAPCOND),
-				.eprom(EPROM));
+divmmc_v mdv(
+	.clock(CLK_14),
+	.reset(rst),	
+	.A(A),
+	.iorq(IORQ),
+	.mreq(MREQ),
+	.rd(RD),
+	.wr(WR),
+	.m1(M1),
+	.romcs(DIVROM),
+	.romoe(ROMOE),
+	//.romwr(ROMWR),
+	.ramoe(RAMOE),
+	.ramwr(RAMWR),
+	.bankout(BANKOUT),
+	.D(DIVDAT),
+	.card(CARD),
+	.spi_clock(SCK),
+	.spi_dataout(MOSI),
+	.spi_datain(MISO),
+	.poweron(POWERON),
+	.mapcondout(MAPCOND),
+	.eprom(EPROM));
 				
 assign RAMCE = MREQ;				
 assign ROMWR = 1;	
 
-
-//
-	
 
 //AY-3 Read/Write
 assign AY_CLK = div[3];
