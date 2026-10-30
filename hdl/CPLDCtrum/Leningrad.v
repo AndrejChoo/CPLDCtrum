@@ -360,7 +360,7 @@ begin
 	else
 		begin
 			if(A[7:0] == 8'hFE && IOWR == 0) FE_W <= D;
-			if(A[7:0] == 8'hFD && A[15:8] == 8'h7F  && IOWR == 0) P7FFD <= D;
+			if(A[15:0] == 16'h7FFD  && IOWR == 0) P7FFD <= D;
 		end
 end
 
